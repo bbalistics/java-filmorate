@@ -4,8 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.validation.UserValidator;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,15 +17,19 @@ import java.util.Map;
 public class UserController {
     private final Map<Integer, User> users = new HashMap<>();
     private int nextId = 1;
+    private final UserValidator userValidator;
+
+    public UserController(UserValidator userValidator) {
+        this.userValidator = userValidator;
+    }
 
     @PostMapping
     public User createUser(@RequestBody User user) {
         log.info("Получен запрос на создание пользователя: {}", user);
         try {
-            validateUser(user);
+            userValidator.validate(user);
             user.setId(nextId);
 
-            //Если имя пустое
             if (user.getName() == null || user.getName().isBlank()) {
                 log.debug("Имя пользователя пустое, будет использован логин: {}", user.getLogin());
                 user.setName(user.getLogin());
@@ -53,9 +57,8 @@ public class UserController {
                 log.warn(errorMessage);
                 throw new ValidationException(errorMessage);
             }
-            validateUser(user);
+            userValidator.validate(user);
 
-            //Если имя пустое
             if (user.getName() == null || user.getName().isBlank()) {
                 log.debug("Имя пользователя пустое, будет использован логин: {}", user.getLogin());
                 user.setName(user.getLogin());
@@ -77,37 +80,5 @@ public class UserController {
     public List<User> getAllUsers() {
         log.info("Получен запрос на получение всех пользователей. Количество пользователей: {}", users.size());
         return new ArrayList<>(users.values());
-    }
-
-    private void validateUser(User user) {
-        log.debug("Начало валидации пользователя: {}", user);
-
-        //Проверка email
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            log.warn("Попытка создания пользователя с пустым email");
-            throw new ValidationException("Email не может быть пустым");
-        }
-        if (!user.getEmail().contains("@")) {
-            log.warn("Попытка создания пользователя с email без @: {}", user.getEmail());
-            throw new ValidationException("Email должен содержать символ @");
-        }
-
-        //Проверка логина
-        if (user.getLogin() == null || user.getLogin().isBlank()) {
-            log.warn("Попытка создания пользователя с пустым логином");
-            throw new ValidationException("Логин не может быть пустым");
-        }
-        if (user.getLogin().contains(" ")) {
-            log.warn("Попытка создания пользователя с логином, содержащим пробелы: {}", user.getLogin());
-            throw new ValidationException("Логин не может содержать пробелы");
-        }
-
-        //Проверка даты рождения
-        if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
-            log.warn("Попытка создания пользователя с датой рождения в будущем: {}", user.getBirthday());
-            throw new ValidationException("Дата рождения не может быть в будущем");
-        }
-
-        log.debug("Валидация пользователя пройдена успешно");
     }
 }
