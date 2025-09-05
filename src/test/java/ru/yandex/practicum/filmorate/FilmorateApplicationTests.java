@@ -8,6 +8,10 @@ import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 import ru.yandex.practicum.filmorate.validation.FilmValidator;
 import ru.yandex.practicum.filmorate.validation.UserValidator;
 
@@ -27,8 +31,18 @@ class FilmorateApplicationTests {
 	void setUp() {
 		filmValidator = new FilmValidator();
 		userValidator = new UserValidator();
-		filmController = new FilmController(filmValidator);
-		userController = new UserController(userValidator);
+
+		//Создаем хранилища
+		InMemoryFilmStorage filmStorage = new InMemoryFilmStorage();
+		InMemoryUserStorage userStorage = new InMemoryUserStorage();
+
+		//Создаем сервисы
+		FilmService filmService = new FilmService(filmStorage, filmValidator);
+		UserService userService = new UserService(userStorage, userValidator);
+
+		//Создаем контроллеры с сервисами
+		filmController = new FilmController(filmService);
+		userController = new UserController(userService);
 	}
 
 	@Test
@@ -37,7 +51,7 @@ class FilmorateApplicationTests {
 		film.setDescription("A".repeat(199));
 
 		try {
-			filmController.addFilm(film);
+			filmController.createFilm(film);
 		} catch (ValidationException e) {
 			fail("Не должно было выбросить ValidationException для 199 символов");
 		}
@@ -49,7 +63,7 @@ class FilmorateApplicationTests {
 		film.setDescription("A".repeat(200));
 
 		try {
-			filmController.addFilm(film);
+			filmController.createFilm(film);
 		} catch (ValidationException e) {
 			fail("Не должно было выбросить ValidationException для 200 символов");
 		}
@@ -63,7 +77,7 @@ class FilmorateApplicationTests {
 		assertThrows(ValidationException.class, new org.junit.jupiter.api.function.Executable() {
 			@Override
 			public void execute() {
-				filmController.addFilm(film);
+				filmController.createFilm(film);
 			}
 		});
 	}
@@ -74,7 +88,7 @@ class FilmorateApplicationTests {
 		film.setReleaseDate(LocalDate.of(1895, 12, 28));
 
 		try {
-			filmController.addFilm(film);
+			filmController.createFilm(film);
 		} catch (ValidationException e) {
 			fail("Не должно было выбросить ValidationException для минимальной даты");
 		}
@@ -88,7 +102,7 @@ class FilmorateApplicationTests {
 		assertThrows(ValidationException.class, new org.junit.jupiter.api.function.Executable() {
 			@Override
 			public void execute() {
-				filmController.addFilm(film);
+				filmController.createFilm(film);
 			}
 		});
 	}
