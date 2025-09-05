@@ -1,72 +1,64 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.validation.FilmValidator;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
 @RequestMapping("/films")
 public class FilmController {
-    private final Map<Integer, Film> films = new HashMap<>();
-    private int nextId = 1;
-    private final FilmValidator filmValidator;
+    private final FilmService filmService;
 
-    public FilmController(FilmValidator filmValidator) {
-        this.filmValidator = filmValidator;
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
     }
 
     @PostMapping
-    public Film addFilm(@RequestBody Film film) {
-        log.info("Получен запрос на добавление фильма: {}", film);
-        try {
-            filmValidator.validate(film);
-            film.setId(nextId);
-            films.put(nextId, film);
-            log.info("Фильм добавлен. ID: {}, название: {}", nextId, film.getName());
-            nextId++;
-            return film;
-        } catch (ValidationException e) {
-            log.warn("Ошибка валидации при добавлении фильма: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Ошибка при добавлении фильма", e);
-            throw e;
-        }
+    public Film createFilm(@RequestBody Film film) {
+        log.info("POST /films - Создание нового фильма");
+        return filmService.addFilm(film);
     }
 
     @PutMapping
     public Film updateFilm(@RequestBody Film film) {
-        log.info("Получен запрос на обновление фильма с ID: {}", film.getId());
-        try {
-            if (film.getId() == null || !films.containsKey(film.getId())) {
-                String errorMessage = "Фильм с id=" + film.getId() + " не найден";
-                log.warn(errorMessage);
-                throw new ValidationException(errorMessage);
-            }
-            filmValidator.validate(film);
-            films.put(film.getId(), film);
-            log.info("Фильм с ID {} успешно обновлен. Новые данные: {}", film.getId(), film);
-            return film;
-        } catch (ValidationException e) {
-            log.warn("Ошибка валидации при обновлении фильма: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Неожиданная ошибка при обновлении фильма с ID: {}", film.getId(), e);
-            throw e;
-        }
+        log.info("PUT /films - Обновление фильма ID={}", film.getId());
+        return filmService.updateFilm(film);
     }
 
     @GetMapping
     public List<Film> getAllFilms() {
-        log.info("Получен запрос на получение всех фильмов. Количество фильмов: {}", films.size());
-        return new ArrayList<>(films.values());
+        log.info("GET /films - Получение всех фильмов");
+        return filmService.getAllFilms();
+    }
+
+    @GetMapping("/{id}")
+    public Film getFilmById(@PathVariable Integer id) {
+        log.info("GET /films/{} - Получение фильма по ID", id);
+        return filmService.getFilmById(id);
+    }
+
+    @PutMapping("/{id}/like/{userId}")
+    public void addLike(@PathVariable Integer id, @PathVariable Integer userId) {
+        log.info("PUT /films/{}/like/{} - Добавление лайка", id, userId);
+        filmService.addLike(id, userId);
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public void removeLike(@PathVariable Integer id, @PathVariable Integer userId) {
+        log.info("DELETE /films/{}/like/{} - Удаление лайка", id, userId);
+        filmService.removeLike(id, userId);
+    }
+
+    @GetMapping("/popular")
+    public List<Film> getPopularFilms() {
+        log.info("GET /films/popular - Получение популярных фильмов");
+        return filmService.getPopularFilms();
     }
 }
+
