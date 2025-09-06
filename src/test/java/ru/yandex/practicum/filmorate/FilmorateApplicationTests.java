@@ -37,8 +37,8 @@ class FilmorateApplicationTests {
 		InMemoryUserStorage userStorage = new InMemoryUserStorage();
 
 		//Создаем сервисы
-		FilmService filmService = new FilmService(filmStorage, filmValidator);
 		UserService userService = new UserService(userStorage, userValidator);
+		FilmService filmService = new FilmService(filmStorage, filmValidator, userService);
 
 		//Создаем контроллеры с сервисами
 		filmController = new FilmController(filmService);
