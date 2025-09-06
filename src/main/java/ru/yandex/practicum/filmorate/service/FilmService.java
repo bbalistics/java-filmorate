@@ -16,11 +16,13 @@ import java.util.*;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final FilmValidator filmValidator;
+    private final UserService userService;
 
     @Autowired
-    public FilmService(FilmStorage filmStorage, FilmValidator filmValidator) {
+    public FilmService(FilmStorage filmStorage, FilmValidator filmValidator, UserService userService) {
         this.filmStorage = filmStorage;
         this.filmValidator = filmValidator;
+        this.userService = userService;
     }
 
     public Film addFilm(Film film) {
@@ -67,6 +69,9 @@ public class FilmService {
         log.debug("Добавление лайка: фильм ID={}, пользователь ID={}", filmId, userId);
         Film film = getFilmById(filmId);
 
+        //Проверка существования пользователя
+        userService.getUserById(userId);
+
         if (film.getLikes().contains(userId)) {
             log.warn("Пользователь ID={} уже поставил лайк фильму ID={}", userId, filmId);
             throw new ValidationException("Пользователь уже поставил лайк этому фильму");
@@ -81,6 +86,9 @@ public class FilmService {
     public void removeLike(Integer filmId, Integer userId) {
         log.debug("Удаление лайка: фильм ID={}, пользователь ID={}", filmId, userId);
         Film film = getFilmById(filmId);
+
+        //Проверка существования пользователя
+        userService.getUserById(userId);
 
         if (!film.getLikes().contains(userId)) {
             log.warn("Пользователь ID={} не ставил лайк фильму ID={}", userId, filmId);
