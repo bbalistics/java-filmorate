@@ -2,8 +2,11 @@ package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.util.List;
@@ -26,9 +29,30 @@ public class FilmController {
     }
 
     @PutMapping
-    public Film updateFilm(@RequestBody Film film) {
-        log.info("PUT /films - Обновление фильма ID={}", film.getId());
-        return filmService.updateFilm(film);
+    public ResponseEntity<Film> updateFilm(@RequestBody Film film) {
+        log.info("PUT /films - Обновление фильма с id={}", film.getId());
+
+        if (film.getId() == null) {
+            throw new ValidationException("ID фильма не может быть null при обновлении");
+        }
+
+        Film updatedFilm = filmService.updateFilm(film);
+        return ResponseEntity.ok(updatedFilm);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Film> updateFilm(@PathVariable Integer id, @RequestBody Film film) {
+        log.info("PUT /films/{} - Обновление фильма", id);
+
+        //Если id в теле null — подставляем из URL
+        if (film.getId() == null) {
+            film.setId(id);
+        } else if (!id.equals(film.getId())) {
+            throw new ValidationException("ID в пути и в теле не совпадают");
+        }
+
+        Film updatedFilm = filmService.updateFilm(film);
+        return ResponseEntity.ok(updatedFilm);
     }
 
     @GetMapping
@@ -56,9 +80,22 @@ public class FilmController {
     }
 
     @GetMapping("/popular")
-    public List<Film> getPopularFilms() {
-        log.info("GET /films/popular - Получение популярных фильмов");
-        return filmService.getPopularFilms();
+    public List<Film> getPopularFilms(@RequestParam(defaultValue = "10") int count) {
+        log.info("GET /films/popular - Получение популярных фильмов (count = {})", count);
+        return filmService.getPopularFilms(count);
+    }
+
+
+    @GetMapping("/mpa")
+    public List<MpaRating> getAllMpaRatings() {
+        log.info("GET /films/mpa - Получение всех MPA-рейтингов");
+        return filmService.getAllMpaRatings();
+    }
+
+    @GetMapping("/mpa/{id}")
+    public MpaRating getMpaRatingById(@PathVariable Integer id) {
+        log.info("GET /films/mpa/{} - Получение MPA-рейтинга", id);
+        return filmService.getMpaRatingById(id);
     }
 }
 
