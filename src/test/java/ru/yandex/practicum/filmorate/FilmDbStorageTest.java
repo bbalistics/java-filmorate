@@ -45,7 +45,6 @@ class FilmDbStorageTest {
 
         Optional<Film> result = filmStorage.getFilmById(savedFilm.getId());
 
-        //Проверка
         assertThat(result).isPresent();
         Film film = result.get();
         assertThat(film.getName()).isEqualTo("Inception");
