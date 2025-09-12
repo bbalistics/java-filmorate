@@ -10,10 +10,12 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.validation.UserValidator;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class UserService {
+
     private final UserStorage userStorage;
     private final UserValidator userValidator;
 
@@ -63,63 +65,71 @@ public class UserService {
         }
     }
 
-    public void addFriend(Integer userId, Integer friendId) {
-        log.debug("Добавление в друзья: пользователь ID={}, друг ID={}", userId, friendId);
-        User user = getUserById(userId);
-        User friend = getUserById(friendId);
+    public void addFriendRequest(Integer userId, Integer friendId) {
+        log.debug("Добавление в друзья: {} → {}", userId, friendId);
 
-        if (user.getFriends().contains(friendId)) {
-            log.warn("Пользователь ID={} уже в друзьях у пользователя ID={}", friendId, userId);
-            throw new ValidationException("Пользователь уже добавлен в друзья");
+        if (userId == null || friendId == null) {
+            throw new ValidationException("ID пользователя и друга не могут быть null");
         }
 
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
+        if (userId.equals(friendId)) {
+            throw new ValidationException("Нельзя добавить самого себя в друзья");
+        }
 
-        userStorage.updateUser(user);
-        userStorage.updateUser(friend);
-        log.info("Дружба установлена: пользователь ID={} и пользователь ID={}", userId, friendId);
+        if (!userStorage.containsUser(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
+
+        if (!userStorage.containsUser(friendId)) {
+            throw new NotFoundException("Пользователь с id=" + friendId + " не найден");
+        }
+
+        userStorage.addFriend(userId, friendId);
+        log.info("Пользователь {} добавил {} в друзья", userId, friendId);
     }
 
     public void removeFriend(Integer userId, Integer friendId) {
-        log.debug("Удаление из друзей: пользователь ID={}, друг ID={}", userId, friendId);
-        User user = getUserById(userId);
-        User friend = getUserById(friendId);
+        log.debug("Удаление из друзей: {} и {}", userId, friendId);
 
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
+        if (!userStorage.containsUser(userId) || !userStorage.containsUser(friendId)) {
+            throw new NotFoundException("Один или оба пользователя не найдены");
+        }
 
-        userStorage.updateUser(user);
-        userStorage.updateUser(friend);
-        log.info("Удаление из друзей: пользователь ID={} и пользователь ID={}", userId, friendId);
+        userStorage.removeFriend(userId, friendId);
+        log.info("Пользователь {} удалил {} из друзей", userId, friendId);
     }
 
     public List<User> getFriends(Integer userId) {
-        log.debug("Запрос друзей пользователя: ID={}", userId);
-        User user = getUserById(userId);
-        List<User> friends = new ArrayList<>();
-        for (Integer friendId : user.getFriends()) {
-            friends.add(getUserById(friendId));
+        log.debug("Запрос друзей пользователя: {}", userId);
+        if (!userStorage.containsUser(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
-        log.info("Найдено {} друзей пользователя ID={}", friends.size(), userId);
-        return friends;
+
+        Set<User> friends = userStorage.getFriends(userId);
+        List<User> result = new ArrayList<>(friends);
+        log.info("Найдено {} друзей", result.size());
+        return result;
     }
 
     public List<User> getCommonFriends(Integer userId1, Integer userId2) {
-        log.debug("Запрос общих друзей: пользователь ID={} и пользователь ID={}", userId1, userId2);
-        User user1 = getUserById(userId1);
-        User user2 = getUserById(userId2);
+        log.debug("Запрос общих друзей: {} и {}", userId1, userId2);
 
-        Set<Integer> commonFriendIds = new HashSet<>(user1.getFriends());
-        commonFriendIds.retainAll(user2.getFriends());
-
-        List<User> commonFriends = new ArrayList<>();
-        for (Integer friendId : commonFriendIds) {
-            commonFriends.add(getUserById(friendId));
+        if (!userStorage.containsUser(userId1)) {
+            throw new NotFoundException("Пользователь с id=" + userId1 + " не найден");
+        }
+        if (!userStorage.containsUser(userId2)) {
+            throw new NotFoundException("Пользователь с id=" + userId2 + " не найден");
         }
 
-        log.info("Найдено {} общих друзей пользователей ID={} и ID={}",
-                commonFriends.size(), userId1, userId2);
-        return commonFriends;
+        Set<User> friends1 = userStorage.getFriends(userId1);
+        Set<User> friends2 = userStorage.getFriends(userId2);
+
+        List<User> common = friends1.stream()
+                .filter(friends2::contains)
+                .collect(Collectors.toList());
+
+        log.info("Найдено {} общих друзей", common.size());
+        return common;
     }
 }
+

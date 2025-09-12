@@ -1,12 +1,12 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface FilmStorage {
-    Film addFilm(Film film);
 
     Film updateFilm(Film film);
 
@@ -16,5 +16,13 @@ public interface FilmStorage {
 
     List<Film> getAllFilms();
 
+    Film save(Film film);
+
     boolean containsFilm(Integer id);
+
+    void addGenre(int filmId, List<Genre> genres);
+
+    void addLike(int filmId, int userId);
+
+    void removeLike(int filmId, int userId);
 }
