@@ -117,10 +117,10 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Optional<Film> getFilmById(Integer id) {
         String sql = """
-                SELECT 
-                    f.id, f.name, f.description, f.release_date, f.duration, 
-                    f.mpa_rating_id,
-                    mr.name AS mpa_name
+                SELECT\s
+                f.id, f.name, f.description, f.release_date, f.duration,\s
+                f.mpa_rating_id,
+                mr.name AS mpa_name
                 FROM films f
                 LEFT JOIN mpa_ratings mr ON f.mpa_rating_id = mr.id
                 WHERE f.id = ?
@@ -156,10 +156,10 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getAllFilms() {
         String sql = """
-                SELECT 
-                    f.id, f.name, f.description, f.release_date, f.duration, 
-                    f.mpa_rating_id,
-                    mr.name AS mpa_name
+                SELECT\s
+                f.id, f.name, f.description, f.release_date, f.duration,\s
+                f.mpa_rating_id,
+                mr.name AS mpa_name
                 FROM films f
                 LEFT JOIN mpa_ratings mr ON f.mpa_rating_id = mr.id
                 """;
